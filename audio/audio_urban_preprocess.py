@@ -56,7 +56,7 @@ def arange_urban_sound_file_by_class():
     dst_dir = '/data1/data/UrbanSound8K-16bit/audio-classfied'
     
     src_paths = list()
-    for d in _list(src_path):
+    for d in _listdir(src_path):
       wavs = filter(lambda x: x.endswith('.wav'), _listdir(d))
       src_paths.extend(list(wavs))
     
