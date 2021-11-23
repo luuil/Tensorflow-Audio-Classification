@@ -8,7 +8,7 @@ Such as, convert `PCM_24` to `PCM_16`
 
 import os
 import soundfile # for convert wav file
-import urban_sound_params
+# import urban_sound_params
 from shutil import copyfile
 from audio_util import maybe_create_directory
 from audio_util import urban_labels
@@ -49,8 +49,17 @@ def convert_urban_pcm24_to_pcm16():
 
 def arange_urban_sound_file_by_class():
     """Arange urban sound file by it's class."""
-    src_paths = '/data1/data/UrbanSound8K-16bit/audio'
+    def _listdir(d):
+      return [os.path.join(d, f) for f in sorted(os.listdir(d))]
+    
+    src_path = '/data1/data/UrbanSound8K-16bit/audio'
     dst_dir = '/data1/data/UrbanSound8K-16bit/audio-classfied'
+    
+    src_paths = list()
+    for d in _list(src_path):
+      wavs = filter(lambda x: x.endswith('.wav'), _listdir(d))
+      src_paths.extend(list(wavs))
+    
     CLASSES = [
         'air conditioner',
         'car horn',
