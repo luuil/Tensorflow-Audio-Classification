@@ -128,12 +128,13 @@ class VGGishExtractor(ExtractorBase):
     def close(self):
         self.sess.close()
 
-
-if __name__ == '__main__':
+def main_test():
     import audio_params
     from vggish import vggish_params
     import timeit
     from audio_util import urban_labels
+
+    tf.get_logger().setLevel('INFO')
 
     wav_file = 'F:/3rd-datasets/UrbanSound8K-16bit/audio-classified/siren/90014-8-0-1.wav'
     wav_dir = 'F:/3rd-datasets/UrbanSound8K-16bit/audio-classified/siren'
@@ -161,3 +162,54 @@ if __name__ == '__main__':
         mel_features = me.wavfile_to_features(wav_file)
         print(mel_features, mel_features.shape)
         me.create_records('./mel_test.records', wav_files[:10], wav_labels[:10])
+
+
+def main_create_urban_tfr():
+    import timeit
+    import natsort
+    import audio_params
+    import vggish_params
+    from audio_util import train_test_val_split
+
+    tf.get_logger().setLevel('INFO')
+    
+    def _listdir(d):
+      return [os.path.join(d, f) for f in natsort.natsorted(os.listdir(d))]
+    
+    wav_dir = r"path/to/UrbanSound8K-16bit/audio-classified"
+    tfr_dir = r"./data/tfrecords"
+
+    wav_files = list()
+    wav_labels = list()
+    class_dict = dict()
+    for idx, folder in enumerate(_listdir(wav_dir)):
+      wavs = list(filter(lambda x: x.endswith('.wav'), _listdir(folder)))
+      wav_files.extend(wavs)
+      wav_labels.extend([idx] * len(wavs))
+      class_dict[idx] = os.path.basename(folder)
+    print(f'class-id pair: {class_dict}')
+
+    wav_file = wav_files[0]
+
+    (X_train, Y_train), (X_test, Y_test), (X_val, Y_val) = train_test_val_split(wav_files, wav_labels, split=(.2, .1), shuffle=True)
+
+    time_start = timeit.default_timer()
+    with VGGishExtractor(audio_params.VGGISH_CHECKPOINT,
+                         audio_params.VGGISH_PCA_PARAMS,
+                         vggish_params.INPUT_TENSOR_NAME,
+                         vggish_params.OUTPUT_TENSOR_NAME) as ve:
+        
+        vggish_features = ve.wavfile_to_features(wav_file)
+        print(vggish_features, vggish_features.shape)
+
+        ve.create_records(os.path.join(tfr_dir, 'vggish.train.records'), X_train, Y_train)
+        ve.create_records(os.path.join(tfr_dir, 'vggish.test.records'), X_test, Y_test)
+        ve.create_records(os.path.join(tfr_dir, 'vggish.val.records'), X_val, Y_val)
+    
+    time_end = timeit.default_timer()
+    print('cost time: {}s, {}s/wav'.format((time_end-time_start), (time_end-time_start)/len(wav_files)))
+
+if __name__ == '__main__':
+    main_test()
+    # main_create_urban_tfr()
+    pass

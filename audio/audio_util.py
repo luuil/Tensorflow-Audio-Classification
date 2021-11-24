@@ -91,7 +91,7 @@ def train_test_val_split(X, Y, split=(0.2, 0.1), shuffle=True):
     X_train, X_test_val, Y_train, Y_test_val = train_test_split(X, Y, 
         test_size=(split[0]+split[1]), shuffle=shuffle)
     X_test, X_val, Y_test, Y_val = train_test_split(X_test_val, Y_test_val, 
-        test_size=split[1], shuffle=False)
+        test_size=split[1]/(split[0]+split[1]), shuffle=False)
     return (X_train, Y_train), (X_test, Y_test), (X_val, Y_val)
 
 
