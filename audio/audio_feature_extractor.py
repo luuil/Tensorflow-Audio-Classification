@@ -131,7 +131,7 @@ class VGGishExtractor(ExtractorBase):
 
 if __name__ == '__main__':
     import audio_params
-    import vggish_params
+    from vggish import vggish_params
     import timeit
     from audio_util import urban_labels
 
