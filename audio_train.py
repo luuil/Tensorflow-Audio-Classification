@@ -9,6 +9,7 @@ sys.path.append('./audio')
 
 import os
 import numpy as np
+import natsort
 
 import matplotlib
 matplotlib.use('Agg')
@@ -130,16 +131,15 @@ def _wav_files_and_labels():
             "https://serv.cusp.nyu.edu/projects/urbansounddataset.".format(
                 FLAGS.wavfile_parent_dir))
         exit(1)
+
+
+    sub_dirs = [x[0] for x in gfile.Walk(FLAGS.wavfile_parent_dir)]
+    sub_dirs = natsort.natsorted(sub_dirs)
+    sub_dirs = sub_dirs[1:] # The root directory comes first, so skip it.
+
     wav_files = []
     wav_labels = []
-    label_idx = 0
-    sub_dirs = [x[0] for x in gfile.Walk(FLAGS.wavfile_parent_dir)]
-    # The root directory comes first, so skip it.
-    is_root_dir = True
-    for sub_dir in sub_dirs:
-        if is_root_dir:
-            is_root_dir = False
-            continue
+    for label_idx, sub_dir in enumerate(sub_dirs):
         extensions = ['wav']
         file_list = []
         dir_name = os.path.basename(sub_dir)
@@ -164,7 +164,6 @@ def _wav_files_and_labels():
         # label_name = re.sub(r'[^a-z0-9]+', ' ', dir_name.lower())
         wav_files.extend(file_list)
         wav_labels.extend([label_idx]*len(file_list))
-        label_idx += 1
     assert len(wav_files) == len(wav_labels), \
         'Length of wav files and wav labels should be in consistent.'
     return wav_files, wav_labels

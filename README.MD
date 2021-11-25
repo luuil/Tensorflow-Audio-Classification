@@ -13,6 +13,17 @@ There is a pre-trained model in [urban_sound_train][i-ckpt], trained epoch is `1
 - [`./audio/*`][i-audio]: Dependencies of training, model and datasets.
 - [`./vggish/*`][i-vggish]: Dependencies of [VGGish][tool-vggish] for feature extracting.
 
+
+### Env setup
+
+Conda are recommended, just need one line: `conda env create -f conda.env.yml`
+
+### Train & Test
+
+1. Config parameters in file `audio_params.py`.
+2. Train the model: `python audio_train.py`. (It will **create tfrecords automaticly** if not exists)
+3. Test the model: `python audio_inference_demo.py`.
+
 ### Tools
 
 - [TensorFlow: VGGish][tool-vggish]

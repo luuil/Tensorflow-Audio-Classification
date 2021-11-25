@@ -42,9 +42,8 @@ def _restore_from_defined_and_ckpt(sess, ckpt):
         audio_model.define_audio_slim(training=False)
         audio_model.load_audio_slim_checkpoint(sess, ckpt)
 
-def inference_wav(wav_file):
+def inference_wav(wav_file: str, label: int):
     """Test audio model on a wav file."""
-    label = util.urban_labels([wav_file])[0]
     graph = tf.Graph()
     with tf.Session(graph=graph, config=SESS_CONFIG) as sess:
         with VGGishExtractor(VGGISH_CKPT,
@@ -53,8 +52,7 @@ def inference_wav(wav_file):
                          audio_params.VGGISH_OUTPUT_TENSOR_NAME) as ve:
             vggish_features = ve.wavfile_to_features(wav_file)
         assert vggish_features is not None
-        labels = [label] * vggish_features.shape[0]
-        
+                
         # restore graph
         # _restore_from_meta_and_ckpt(sess, META, CKPT)
         _restore_from_defined_and_ckpt(sess, CKPT)
@@ -64,15 +62,14 @@ def inference_wav(wav_file):
         inputs = graph.get_tensor_by_name(audio_params.AUDIO_INPUT_TENSOR_NAME)
         outputs = graph.get_tensor_by_name(audio_params.AUDIO_OUTPUT_TENSOR_NAME)
         
-        predictions = sess.run(outputs, feed_dict={inputs: vggish_features})
-        idxes = np.argmax(predictions, 1)
-        probs = np.max(predictions, 1)
-        print(predictions)
-        print(idxes)
-        print(labels)
-        print(probs)
-        acc = accuracy_score(labels, idxes)
-        print('acc:', acc)
+        predictions = sess.run(outputs, feed_dict={inputs: vggish_features}) # [num_features, num_class]
+
+        # voting
+        predictions = np.mean(predictions, axis=0)
+        label_pred = np.argmax(predictions)
+        
+        print('true label:', label)
+        print('predict label:', label_pred)
 
 
 def inference_on_test():
@@ -115,6 +112,6 @@ def inference_on_test():
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
-    inference_wav('./data/wav/13230-0-0-1.wav')
+    inference_wav('./data/wav/13230-0-0-1.wav', 0)
     inference_on_test()
 

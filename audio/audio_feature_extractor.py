@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import sys
 sys.path.append('./vggish')
+sys.path.append('./audio')
 
 import os
 
