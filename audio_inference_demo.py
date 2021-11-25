@@ -19,6 +19,7 @@ from audio_feature_extractor import VGGishExtractor
 from audio_records import RecordsParser
 
 
+NUM_VGGISH_FEATURE_PER_EXAMPLE = audio_params.NUM_VGGISH_FEATURE_PER_EXAMPLE
 CKPT_DIR = audio_params.AUDIO_CHECKPOINT_DIR
 CKPT_NAME = audio_params.AUDIO_CHECKPOINT_NAME
 META = pjoin(CKPT_DIR, audio_params.AUDIO_TRAIN_NAME, '{ckpt}.meta'.format(ckpt=CKPT_NAME))
@@ -52,6 +53,9 @@ def inference_wav(wav_file: str, label: int):
                          audio_params.VGGISH_OUTPUT_TENSOR_NAME) as ve:
             vggish_features = ve.wavfile_to_features(wav_file)
         assert vggish_features is not None
+
+        if NUM_VGGISH_FEATURE_PER_EXAMPLE > 1:
+            vggish_features = vggish_features.reshape(1, -1)
                 
         # restore graph
         # _restore_from_meta_and_ckpt(sess, META, CKPT)
@@ -67,9 +71,13 @@ def inference_wav(wav_file: str, label: int):
         # voting
         predictions = np.mean(predictions, axis=0)
         label_pred = np.argmax(predictions)
+        prob = predictions[label_pred] * 100
         
-        print('true label:', label)
-        print('predict label:', label_pred)
+        print('\n'*3)
+        print(f'{dict(zip(range(len(predictions)), predictions))}')
+        print(f'true label: {label}')
+        print(f'predict label: {label_pred}({prob:.03f}%)')
+        print('\n'*3)
 
 
 def inference_on_test():
@@ -112,6 +120,6 @@ def inference_on_test():
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
-    inference_wav('./data/wav/13230-0-0-1.wav', 0)
-    inference_on_test()
+    inference_wav('./data/wav/16772-8-0-0.wav', 8)
+    # inference_on_test()
 

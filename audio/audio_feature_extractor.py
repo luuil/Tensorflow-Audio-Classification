@@ -18,6 +18,7 @@ import vggish_postprocess
 
 from audio_records import encodes_example
 from audio_util import maybe_create_directory
+from audio_params import NUM_VGGISH_FEATURE_PER_EXAMPLE
 
 
 class ExtractorBase(ABC):
@@ -44,21 +45,30 @@ class ExtractorBase(ABC):
         maybe_create_directory(record_dir)
         writer = tf.python_io.TFRecordWriter(record_path)
         N = len(wav_labels)
-        n = 1
-        for (wav_file, wav_label) in zip(wav_files, wav_labels):
+        for n, (wav_file, wav_label) in enumerate(zip(wav_files, wav_labels)):
             tf.logging.info('[{}/{}] Extracting VGGish feature:'
                 ' label: {} - {}'.format(n, N, wav_label, wav_file))
-            n += 1
+
             features = self.wavfile_to_features(wav_file)
-            num_features = features.shape[0] # one feature for one second
-            if num_features == 0:
-                tf.logging.warning('No vggish features:'
-                    ' label: {} - {}'.format(wav_label, wav_file))
-                continue
-            cur_wav_labels = [wav_label] * num_features
-            for (f, l) in zip(features, cur_wav_labels):
+
+            if NUM_VGGISH_FEATURE_PER_EXAMPLE > 1:
+                if NUM_VGGISH_FEATURE_PER_EXAMPLE != num_features:
+                    tf.logging.warning('Invalid vggish features length:'
+                        ' label: {} - {}'.format(wav_label, wav_file))
+                    continue
+                f = features.reshape(-1)
                 example = encodes_example(np.float64(f), np.int64(l))
                 writer.write(example.SerializeToString())
+            else:
+                num_features = features.shape[0] # one feature for one second
+                if num_features == 0:
+                    tf.logging.warning('No vggish features:'
+                        ' label: {} - {}'.format(wav_label, wav_file))
+                    continue
+                cur_wav_labels = [wav_label] * num_features
+                for (f, l) in zip(features, cur_wav_labels):
+                    example = encodes_example(np.float64(f), np.int64(l))
+                    writer.write(example.SerializeToString())
         writer.close()
 
 

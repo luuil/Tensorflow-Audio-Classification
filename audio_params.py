@@ -16,9 +16,10 @@ TENSORBOARD_DIR = './data/tensorboard'      # Tensorboard
 
 # Path to UrbanSound8K
 WAV_FILE_PARENT_DIR = '/data1/data/UrbanSound8K-16bit/audio-classfied'
+NUM_VGGISH_FEATURE_PER_EXAMPLE = 1
 
 # Architectural constants.
-EMBEDDING_SIZE = 128  # Size of embedding layer.
+EMBEDDING_SIZE = 128 * NUM_VGGISH_FEATURE_PER_EXAMPLE # Size of embedding layer.
 NUM_FEATURES = EMBEDDING_SIZE
 NUM_CLASSES = 10
 
