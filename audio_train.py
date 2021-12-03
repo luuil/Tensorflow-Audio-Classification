@@ -10,6 +10,7 @@ sys.path.append('./audio')
 import os
 import numpy as np
 import natsort
+import shutil
 
 import matplotlib
 matplotlib.use('Agg')
@@ -18,6 +19,8 @@ import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from tensorflow.python.platform import gfile
+
+from sklearn.metrics import accuracy_score
 
 import audio_params as params
 import audio_util as util
@@ -83,6 +86,8 @@ audio_ckpt_dir = os.path.join(FLAGS.audio_ckpt_dir,
 util.maybe_create_directory(tensorboard_dir)
 util.maybe_create_directory(audio_ckpt_dir)
 
+# backup params
+shutil.copy(os.path.join(os.path.dirname(__file__), 'audio_params.py'), audio_ckpt_dir)
 
 def _add_triaining_graph():
     with tf.Graph().as_default() as graph:
@@ -200,6 +205,11 @@ def _get_records_iterator(records_path, batch_size):
     return rp.iterator(is_onehot=True, batch_size=batch_size)
 
 
+def _add_scalar_summary(writer, tag, value, step):
+    scalar_summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=value)])
+    writer.add_summary(scalar_summary, step)
+
+
 def main(_):
 
     # initialize all log data containers:
@@ -215,7 +225,8 @@ def main(_):
     with tf.Session(graph=_add_triaining_graph(), config=sess_config) as sess:
         train_iterator, train_batch = _get_records_iterator(train_records_path,
             batch_size=params.BATCH_SIZE)
-        val_iterator, val_batch = _get_records_iterator(val_records_path, batch_size=1)
+        val_iterator, val_batch = _get_records_iterator(val_records_path, batch_size=128)
+        test_iterator, test_batch = _get_records_iterator(test_records_path, batch_size=128)
 
         # op and tensors
         features_tensor = sess.graph.get_tensor_by_name(params.AUDIO_INPUT_TENSOR_NAME)
@@ -280,6 +291,24 @@ def main(_):
             val_loss = np.mean(val_batch_losses)
             val_loss_per_epoch.append(val_loss)
             print("validation loss: %g" % val_loss)
+            _add_scalar_summary(summary_writer, 'train/val_loss', val_loss, num_steps) # add to summary
+
+            # testing loop
+            predicted = []
+            groundtruth = []
+            sess.run(test_iterator.initializer)
+            while True:
+                try:
+                    te_features, te_labels = sess.run(test_batch)
+                except tf.errors.OutOfRangeError:
+                    break
+                predictions = sess.run(output_tensor, feed_dict={features_tensor: te_features, labels_tensor: te_labels})
+                predicted.extend(np.argmax(predictions, axis=1))
+                groundtruth.extend(np.argmax(te_labels, axis=1))
+            test_acc = accuracy_score(groundtruth, predicted, normalize=True)
+            print(f"test_acc: {test_acc}")
+            _add_scalar_summary(summary_writer, 'train/test_acc', test_acc, num_steps) # add to summary
+
 
             if val_loss < min(best_epoch_losses): # (if top 5 performance on val:)
                 # save the model weights to disk:
