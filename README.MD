@@ -20,9 +20,10 @@ Conda are recommended, just need one line: `conda env create -f conda.env.yml`
 
 ### Train & Test
 
-1. Config parameters in file `audio_params.py`.
+1. Config parameters: `audio_params.py`.
 2. Train the model: `python audio_train.py`. (It will **create tfrecords automaticly** if not exists)
-3. Test the model: `python audio_inference_demo.py`.
+3. Check the training process from tensorboard: `tensorboard --logdir=./data/tensorboard`
+4. Test the model: `python audio_inference_demo.py`.
 
 ### Tools
 
